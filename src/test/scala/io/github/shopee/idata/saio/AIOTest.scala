@@ -110,10 +110,10 @@ class AIOTest extends org.scalatest.FunSuite {
         conn =>
           ConnectionHandler(
             conn,
-            onData = (data: Array[Byte]) => this.synchronized {
+            onData = (data: Array[Byte]) => {
               val text = new String(data, "UTF-8")
-
               textBuilder.append(text)
+
               if (textBuilder.length == messageText.length) {
                 p success textBuilder
               }
@@ -127,6 +127,45 @@ class AIOTest extends org.scalatest.FunSuite {
     }
 
     Await.result(Future.sequence(1 to clientNum map { _ => clientGet() }), 15.seconds)
+
+    server.close()
+  }
+
+  private def serverGetMessages(message: String, clientNum: Int = 8) = {
+    val p = Promise[Any]()
+    val messageText = (1 to clientNum map { _ => message }).mkString("")
+    val builders = ListBuffer[StringBuilder]()
+
+    val server = AIO.getTcpServer(
+      onConnection = (conn: AIOConnection.Connection) => {
+        val textBuilder = new StringBuilder()
+        builders.append(textBuilder)
+        val connHandler = ConnectionHandler(conn, onData = (data: Array[Byte]) => {
+          val text = new String(data, "UTF-8")
+          textBuilder.append(text)
+
+          val curLen = builders.foldLeft(0)((prev, builder) => prev + builder.length)
+
+          if(curLen == messageText.length) {
+            p success builders
+          }
+        })
+      }
+    )
+
+    def clientSend() = {
+      AIO.getTcpClient(port = server.getLocalAddress().asInstanceOf[InetSocketAddress].getPort()) map {
+        conn => {
+          val connHandler = ConnectionHandler(conn)
+          connHandler.sendMessage(message)
+        }
+      }
+    }
+
+    1 to clientNum foreach {_ => clientSend()}
+
+    Await.result(p.future, 15.seconds)
+    assert(builders.map((builder) => builder.toString()).mkString("") == messageText)
 
     server.close()
   }
@@ -172,6 +211,16 @@ class AIOTest extends org.scalatest.FunSuite {
     } toList)
 
     serverSendMessages(messages)
+  }
+
+  test("tcp: sever get multiple messages") {
+    serverGetMessages("hello world from client", 200)
+  }
+
+  test("tcp: sever get multiple big messages") {
+    1 to 10 foreach { _ =>
+      serverGetMessages((1 to 100 map { index => s"hello world from server the ${index} time"}).mkString(","), 20)
+    }
   }
 
   test("tcp: big messages from server") {
@@ -250,5 +299,11 @@ class AIOTest extends org.scalatest.FunSuite {
     }, 15.seconds)
 
     server.close()
-  } 
+  }
+
+  test("tcp: connet fail") {
+    assertThrows[java.net.ConnectException] {
+      Await.result(AIO.getTcpClient(port = 12667), 15.seconds)
+    }
+  }
 }
