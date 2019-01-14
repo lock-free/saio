@@ -142,12 +142,14 @@ class AIOTest extends org.scalatest.FunSuite {
         builders.append(textBuilder)
         val connHandler = ConnectionHandler(conn, onData = (data: Array[Byte]) => {
           val text = new String(data, "UTF-8")
-          textBuilder.append(text)
+          if(text.length > 0) {
+            textBuilder.append(text)
 
-          val curLen = builders.foldLeft(0)((prev, builder) => prev + builder.length)
+            val curLen = builders.foldLeft(0)((prev, builder) => prev + builder.length)
 
-          if(curLen == messageText.length) {
-            p success builders
+            if(curLen == messageText.length) {
+              p success builders
+            }
           }
         })
       }
