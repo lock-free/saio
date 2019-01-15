@@ -216,7 +216,7 @@ class AIOTest extends org.scalatest.FunSuite {
     val messages = List("hello world from server",
                         "hello world from server again",
                         "hello world from server the third time") ++
-    (1 to 10000 map { index =>
+    (1 to 1000 map { index =>
       s"hello world from server the ${index} time"
     } toList)
 
@@ -237,7 +237,7 @@ class AIOTest extends org.scalatest.FunSuite {
 
   test("tcp: big messages from server") {
     val messages = 1 to 10 map { index =>
-      (1 to 10000 map { index2 =>
+      (1 to 1000 map { index2 =>
         s"[${index}]hello world from server the ${index2} time"
       }).mkString(",")
     } toList
@@ -249,7 +249,7 @@ class AIOTest extends org.scalatest.FunSuite {
     val messages = List("hello world from server",
                         "hello world from server again",
                         "hello world from server the third time") ++
-    (1 to 10000 map { index =>
+    (1 to 1000 map { index =>
       s"hello world from server the ${index} time"
     } toList)
 
@@ -258,7 +258,7 @@ class AIOTest extends org.scalatest.FunSuite {
 
   test("tcp: big messages from client") {
     val messages = 1 to 1000 map { index =>
-      (1 to 100000 map { index2 =>
+      (1 to 10000 map { index2 =>
         s"[${index}]hello world from server the ${index2} time"
       }).mkString(",")
     } toList
