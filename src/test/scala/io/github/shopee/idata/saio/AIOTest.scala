@@ -258,7 +258,7 @@ class AIOTest extends org.scalatest.FunSuite {
 
   test("tcp: big messages from client") {
     val messages = 1 to 1000 map { index =>
-      (1 to 10000 map { index2 =>
+      (1 to 1000 map { index2 =>
         s"[${index}]hello world from server the ${index2} time"
       }).mkString(",")
     } toList
