@@ -22,5 +22,5 @@ object AIO {
       hostname: String = "0.0.0.0",
       port: Int = 0,
       onConnection: AIOServer.OnConnection = (conn: AIOConnection.Connection) => {}
-  ): AsynchronousServerSocketChannel = AIOServer.startServer(hostname, port, onConnection)
+  ): AIOServer.Server = AIOServer.startServer(hostname, port, onConnection)
 }

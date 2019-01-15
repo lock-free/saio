@@ -2,10 +2,11 @@ package io.github.shopee.idata.saio
 
 import java.nio.channels.AsynchronousServerSocketChannel
 import java.net.InetSocketAddress
-import java.nio.ByteBuffer;
+import java.nio.ByteBuffer
 import java.nio.channels.AsynchronousSocketChannel
 import java.nio.channels.CompletionHandler
 import java.nio.channels.AsynchronousServerSocketChannel
+import scala.collection.mutable.ListBuffer
 
 object AIOServer {
   type OnConnection = (AIOConnection.Connection) => _
@@ -22,16 +23,21 @@ object AIOServer {
     }
   }
 
-  def startServer(hostname: String = "0.0.0.0",
-                  port: Int,
-                  onConnection: OnConnection): AsynchronousServerSocketChannel = {
+  case class Server(hostname: String = "0.0.0.0", port: Int, onConnection: OnConnection) {
     val addr   = new InetSocketAddress(hostname, port)
     val server = AsynchronousServerSocketChannel.open().bind(addr)
 
-    lazy val acceptHandler: AcceptHandler = AcceptHandler(
+    private val channels = ListBuffer[AIOConnection.Connection]()
+
+    private lazy val acceptHandler: AcceptHandler = AcceptHandler(
       (ch: AsynchronousSocketChannel, att: Object) => {
         try {
-          onConnection(AIOConnection.Connection(ch))
+          val aioConn = AIOConnection.Connection(ch)
+          val lives = channels.toList.filter((channel) => channel.isOpen())
+          channels.clear()
+          channels.appendAll(lives)
+
+          onConnection(aioConn)
         } finally {
           server.accept("Client connection", acceptHandler)
         }
@@ -46,6 +52,25 @@ object AIOServer {
 
     server.accept("Client connection", acceptHandler)
 
-    server
+    def close() = {
+      server.close()
+
+      // close all channels
+      channels.foreach((channel) => {
+        try {
+          channel.close()
+        } catch {
+          case e: Exception => {
+            println(e)
+          }
+        }
+      })
+      channels.clear()
+    }
+
+    def getPort(): Int = server.getLocalAddress().asInstanceOf[InetSocketAddress].getPort()
   }
+
+  def startServer(hostname: String = "0.0.0.0", port: Int, onConnection: OnConnection): Server =
+    Server(hostname, port, onConnection)
 }

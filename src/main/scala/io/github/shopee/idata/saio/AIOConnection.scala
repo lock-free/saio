@@ -5,9 +5,9 @@ import java.nio.channels.CompletionHandler
 import java.nio.ByteBuffer
 
 object AIOConnection {
-  type FailHandler = (Throwable, Any) => _
+  type FailHandler     = (Throwable, Any) => _
   type WriteCompletion = (Integer, ByteBuffer) => _
-  type ReadCompletion = (Integer, AsynchronousSocketChannel) => _
+  type ReadCompletion  = (Integer, AsynchronousSocketChannel) => _
 
   case class WriteHandler(buffer: ByteBuffer, onComplete: WriteCompletion, onFail: FailHandler)
       extends CompletionHandler[Integer, ByteBuffer] {
@@ -31,7 +31,7 @@ object AIOConnection {
   case class Connection(ch: AsynchronousSocketChannel) {
     val readBuf = ByteBuffer.allocate(1024)
 
-    def readChunk(onData: (Array[Byte]) => _, onFail: (Exception) => _) = {
+    def readChunk(onData: (Array[Byte]) => _, onFail: (Exception) => _) =
       ch.read(
         readBuf,
         ch,
@@ -57,26 +57,35 @@ object AIOConnection {
           }
         )
       )
-    }
 
     // write data to channel
     def write(buffer: ByteBuffer, onComplete: () => _, onFail: (Exception) => _): Unit =
-      ch.write(buffer, buffer, WriteHandler(buffer, (status: Integer, buffer: ByteBuffer) => {
-        if(status < 0) {
-          onFail(new Exception("connection already closed"))
-        } else {
-          if(buffer.hasRemaining()) {
-            write(buffer, onComplete, onFail)
-          } else {
-            onComplete()
+      ch.write(
+        buffer,
+        buffer,
+        WriteHandler(
+          buffer,
+          (status: Integer, buffer: ByteBuffer) => {
+            if (status < 0) {
+              onFail(new Exception("connection already closed"))
+            } else {
+              if (buffer.hasRemaining()) {
+                write(buffer, onComplete, onFail)
+              } else {
+                onComplete()
+                buffer.clear()
+              }
+            }
+          },
+          (ex: Throwable, ch: Any) => {
+            onFail(new Exception(ex))
             buffer.clear()
           }
-        } 
-      }, (ex: Throwable, ch: Any) => {
-        onFail(new Exception(ex))
-        buffer.clear()
-      }))
+        )
+      )
 
     def close() = ch.close()
+
+    def isOpen() = ch.isOpen()
   }
 }

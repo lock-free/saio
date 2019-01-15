@@ -10,7 +10,7 @@ case class ConnectionHandler(
 )(implicit ec: ExecutionContext) {
   private def readData(): Unit =
     connection.readChunk((bytes: Array[Byte]) => {
-      if(bytes != null) {
+      if (bytes != null) {
         onData(bytes)
       }
       // keep reading data
