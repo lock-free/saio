@@ -322,4 +322,12 @@ class AIOTest extends org.scalatest.FunSuite {
       Await.result(AIO.getTcpClient(port = 12667), 15.seconds)
     }
   }
+
+  test("tcp: exeption when listen to the same port") {
+    val server = AIO.getTcpServer()
+    assertThrows[java.net.BindException] {
+      AIO.getTcpServer(port = server.getPort())
+    }
+    server.close()
+  }
 }
