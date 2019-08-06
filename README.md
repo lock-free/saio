@@ -5,7 +5,7 @@ AIO library for scala
 ## Quick example
 
 ```scala
-import io.github.shopee.idata.saio.{ AIO, ConnectionHandler, AIOConnection }
+import io.github.free.lock.saio.{ AIO, ConnectionHandler, AIOConnection }
 import java.net.InetSocketAddress
 import scala.concurrent.ExecutionContext.Implicits.global
 

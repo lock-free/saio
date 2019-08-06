@@ -1,5 +1,5 @@
 name := "saio"
-organization := "io.github.idata-shopee"
+organization := "io.github.lock-free"
 version := "0.0.2"
 scalaVersion := "2.12.4"
 
